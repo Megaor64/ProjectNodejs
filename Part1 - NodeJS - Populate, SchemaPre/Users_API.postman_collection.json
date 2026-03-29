@@ -1,0 +1,214 @@
+{
+	"info": {
+		"_postman_id": "users-api-collection",
+		"name": "NodeJS JWT API - Full Collection",
+		"description": "Collection for Auth (register, verify, login), Users and Movies API with JWT. Set {{token}} from Login response (data field) for protected routes.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:3000" },
+		{ "key": "token", "value": "" },
+		{ "key": "userId", "value": "" },
+		{ "key": "movieID", "value": "" }
+	],
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"John Doe\",\n    \"email\": \"john@example.com\",\n    \"password\": \"SecurePass123\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": "{{baseUrl}}/auth/register",
+						"description": "Register a new user. Required: name, email, password. Email must be unique. Sends verification code to user (check mailer). Response: user object."
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Email",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"john@example.com\",\n    \"code\": \"123456\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": "{{baseUrl}}/auth/verify",
+						"description": "Verify email with the code sent after register. Required: email, code. User must be verified before login."
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const json = pm.response.json();",
+									"    if (json.data) {",
+									"        pm.collectionVariables.set('token', json.data);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"john@example.com\",\n    \"password\": \"SecurePass123\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": "{{baseUrl}}/auth/login",
+						"description": "Login with email and password. User must be verified first. Returns JWT in data. Token is saved to collection variable 'token' for protected requests."
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication: register, verify email, login. Login returns JWT used in Authorization header."
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": "{{baseUrl}}/users",
+						"description": "Get all users. Requires valid JWT (Authorization: Bearer token)."
+					},
+					"response": []
+				},
+				{
+					"name": "Get User By ID",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": {
+							"raw": "{{baseUrl}}/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "{{userId}}"]
+						},
+						"description": "Get a user by MongoDB _id. Requires JWT."
+					},
+					"response": []
+				},
+				{
+					"name": "Update User (PATCH)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" },
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Jane Doe\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "{{userId}}"]
+						},
+						"description": "Partially update user. Only the logged-in user can update their own profile (userId in URL must match token). Send only fields to update: name, email, etc."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": {
+							"raw": "{{baseUrl}}/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "{{userId}}"]
+						},
+						"description": "Delete user by ID. Only the logged-in user can delete their own account (checkPermissions)."
+					},
+					"response": []
+				}
+			],
+			"description": "Users CRUD. All endpoints require Authorization: Bearer &lt;token&gt;. Update/Delete only for own user."
+		},
+		{
+			"name": "Movies",
+			"item": [
+				{
+					"name": "Get All Movies",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/movies",
+						"description": "Get all movies (populated with createdBy name, email). No authentication required."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Movie",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{token}}" }
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "title", "value": "Inception", "type": "text", "description": "Required" },
+								{ "key": "year", "value": "2010", "type": "text" },
+								{ "key": "genre", "value": "Sci-Fi", "type": "text" },
+								{ "key": "image", "type": "file", "src": [], "description": "Optional. Allowed: jpeg, png, webp, gif. Max 5MB. Uploaded to Cloudinary." }
+							]
+						},
+						"url": "{{baseUrl}}/movies",
+						"description": "Create a new movie. Requires JWT. Uses multipart/form-data. Required: title. Optional: year, genre, image (file). Image is uploaded to Cloudinary; createdBy is set from token."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Movies By User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/movies/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["movies", "{{userId}}"]
+						},
+						"description": "Get all movies created by a specific user (MongoDB user _id). No auth required."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Movie",
+					"request": {
+						"method": "DELETE",
+						"header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+						"url": {
+							"raw": "{{baseUrl}}/movies/{{movieID}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["movies", "{{movieID}}"]
+						},
+						"description": "Delete a movie by ID. Requires JWT. Only the user who created the movie can delete it (permission check). Set {{movieID}} to the movie's MongoDB _id."
+					},
+					"response": []
+				}
+			],
+			"description": "Movies: list all, create (auth + optional image upload), list by user, delete (auth, owner only)."
+		}
+	]
+}

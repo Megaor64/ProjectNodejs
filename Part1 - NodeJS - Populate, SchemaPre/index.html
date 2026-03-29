@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <h1>Simple Client</h1>
+
+    <ul id="users-list">
+
+    </ul>
+
+
+    <script>
+        const usersList = document.getElementById("users-list")
+
+        // port 3005
+        // localhost
+        // GET - /users - get all users
+
+        const fetchUsers = async () => {
+            const response = await fetch("http://localhost:3005/users")
+            const users = await response.json()
+            return users;
+        }
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            const users = await fetchUsers()
+            // Ternary condition
+            // console.log(Array.isArray(users.data))
+            // console.log(users.data)
+            Array.isArray(users.data) && users.data.forEach((u) => {
+                const li = document.createElement("li")
+                li.textContent = u.name
+                usersList.appendChild(li)
+            })
+        })
+
+    </script>
+</body>
+
+</html>
